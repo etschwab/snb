@@ -48,6 +48,7 @@
         linear-gradient(180deg, #fcfaf4 0%, #f4f1ea 42%, #efe9de 100%);
       min-height: 100vh;
       line-height: 1.6;
+      overflow-x: hidden;
     }
 
     body::before {
@@ -68,6 +69,11 @@
       text-decoration: none;
     }
 
+    main[id],
+    section[id] {
+      scroll-margin-top: 118px;
+    }
+
     .page {
       width: min(calc(100% - 32px), var(--max-width));
       margin: 0 auto;
@@ -81,6 +87,8 @@
       gap: 18px;
       padding: 18px 0 10px;
       margin-bottom: 18px;
+      position: relative;
+      z-index: 2;
     }
 
     .brand {
@@ -128,6 +136,56 @@
     .nav a:hover {
       transform: translateY(-2px);
       background: white;
+    }
+
+    .floating-nav {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      width: min(calc(100% - 40px), 960px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      border-radius: 24px;
+      background: rgba(255, 254, 249, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow: 0 24px 60px rgba(16, 33, 52, 0.18);
+      backdrop-filter: blur(18px);
+      transform: translate(-50%, calc(-100% - 20px));
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.32s ease, opacity 0.32s ease;
+      z-index: 30;
+    }
+
+    .floating-nav .brand {
+      font-size: 0.84rem;
+      white-space: nowrap;
+    }
+
+    .floating-nav .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      box-shadow: none;
+    }
+
+    .floating-nav .nav {
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .floating-nav .nav a {
+      padding: 9px 13px;
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    body.nav-visible .floating-nav {
+      transform: translate(-50%, 0);
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .hero {
@@ -581,6 +639,32 @@
       font-weight: 800;
     }
 
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .floating-nav,
+      .nav a,
+      .button {
+        transition: none;
+      }
+    }
+
+    @media (max-width: 1180px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel {
+        min-height: auto;
+      }
+
+      .lead {
+        max-width: 100%;
+      }
+    }
+
     @media (max-width: 1024px) {
       .hero-grid,
       .split,
@@ -593,6 +677,21 @@
       .stats-grid,
       .org-grid {
         grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav {
+        justify-content: flex-start;
+      }
+
+      .floating-nav {
+        display: none;
       }
     }
 
@@ -609,11 +708,31 @@
       .nav {
         justify-content: flex-start;
         margin-top: 14px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+      }
+
+      .nav::-webkit-scrollbar {
+        display: none;
+      }
+
+      .nav a {
+        white-space: nowrap;
       }
 
       .hero,
       .section {
         padding: 22px;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
       }
 
       .hero-grid,
@@ -633,10 +752,56 @@
       h1 {
         max-width: 100%;
       }
+
+      .inline-photo img {
+        min-height: 220px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .page {
+        width: min(calc(100% - 16px), var(--max-width));
+      }
+
+      .hero,
+      .section {
+        padding: 20px 18px;
+      }
+
+      h1 {
+        font-size: clamp(2.35rem, 14vw, 3.4rem);
+      }
+
+      h2 {
+        font-size: clamp(1.7rem, 9vw, 2.3rem);
+      }
+
+      .inline-photo img {
+        min-height: 180px;
+      }
+
+      .stat strong,
+      .quote strong {
+        font-size: 1.5rem;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="floating-nav">
+    <a class="brand" href="#top">
+      <span class="brand-mark">SNB</span>
+      <span>SNB Kompakt</span>
+    </a>
+    <nav class="nav" aria-label="Schnellnavigation">
+      <a href="#ueberblick">Überblick</a>
+      <a href="#aufgaben">Aufgaben</a>
+      <a href="#preisstabilitaet">Preisstabilität</a>
+      <a href="#organisation">Organisation</a>
+      <a href="#team">Team</a>
+    </nav>
+  </div>
+
   <div class="page">
     <header class="topbar">
       <a class="brand" href="#top">
@@ -951,5 +1116,52 @@
       Inhalte und Bilder orientieren sich an der offiziellen SNB-Website
     </footer>
   </div>
+  <script>
+    (() => {
+      const desktopQuery = window.matchMedia("(min-width: 901px)");
+      let lastScrollY = window.scrollY;
+      let ticking = false;
+
+      const syncFloatingNav = () => {
+        const currentScrollY = window.scrollY;
+        const scrolledUp = currentScrollY < lastScrollY - 6;
+        const scrolledDown = currentScrollY > lastScrollY + 6;
+        const pastThreshold = currentScrollY > 220;
+
+        if (!desktopQuery.matches || !pastThreshold) {
+          document.body.classList.remove("nav-visible");
+        } else if (scrolledUp) {
+          document.body.classList.add("nav-visible");
+        } else if (scrolledDown) {
+          document.body.classList.remove("nav-visible");
+        }
+
+        lastScrollY = currentScrollY;
+        ticking = false;
+      };
+
+      const onScroll = () => {
+        if (!ticking) {
+          window.requestAnimationFrame(syncFloatingNav);
+          ticking = true;
+        }
+      };
+
+      const onViewportChange = () => {
+        lastScrollY = window.scrollY;
+        syncFloatingNav();
+      };
+
+      syncFloatingNav();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onViewportChange);
+
+      if (typeof desktopQuery.addEventListener === "function") {
+        desktopQuery.addEventListener("change", onViewportChange);
+      } else if (typeof desktopQuery.addListener === "function") {
+        desktopQuery.addListener(onViewportChange);
+      }
+    })();
+  </script>
 </body>
 </html>
