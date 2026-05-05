@@ -702,6 +702,7 @@
       .floating-nav,
       .header-nav,
       .menu-toggle-bars span,
+      .topbar,
       .nav a,
       .button {
         transition: none;
@@ -760,6 +761,7 @@
     @media (max-width: 760px) {
       .page {
         width: min(calc(100% - 20px), var(--max-width));
+        padding-top: 98px;
       }
 
       .section-head {
@@ -768,13 +770,29 @@
 
       .topbar {
         display: block;
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        width: min(calc(100% - 20px), var(--max-width));
         padding: 14px;
-        margin-bottom: 20px;
+        margin-bottom: 0;
         border-radius: 28px;
         background: rgba(255, 254, 249, 0.82);
         border: 1px solid rgba(255, 255, 255, 0.9);
         box-shadow: 0 20px 44px rgba(16, 33, 52, 0.12);
         backdrop-filter: blur(18px);
+        transform: translate(-50%, calc(-100% - 20px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.32s ease, opacity 0.26s ease;
+        z-index: 35;
+      }
+
+      body.mobile-nav-visible .topbar,
+      body.menu-open .topbar {
+        transform: translate(-50%, 0);
+        opacity: 1;
+        pointer-events: auto;
       }
 
       .menu-toggle {
@@ -918,11 +936,14 @@
     @media (max-width: 540px) {
       .page {
         width: min(calc(100% - 16px), var(--max-width));
+        padding-top: 92px;
       }
 
       .topbar {
+        top: 8px;
         padding: 12px;
         border-radius: 24px;
+        width: min(calc(100% - 16px), var(--max-width));
       }
 
       .brand {
@@ -1338,6 +1359,8 @@
         const scrolledUp = currentScrollY < lastScrollY - 6;
         const scrolledDown = currentScrollY > lastScrollY + 6;
         const pastThreshold = currentScrollY > 220;
+        const mobilePastThreshold = currentScrollY > 140;
+        const menuIsOpen = document.body.classList.contains("menu-open");
 
         if (!desktopQuery.matches || !pastThreshold) {
           document.body.classList.remove("nav-visible");
@@ -1345,6 +1368,18 @@
           document.body.classList.add("nav-visible");
         } else if (scrolledDown) {
           document.body.classList.remove("nav-visible");
+        }
+
+        if (!mobileQuery.matches) {
+          document.body.classList.remove("mobile-nav-visible");
+        } else if (menuIsOpen || currentScrollY <= 24) {
+          document.body.classList.add("mobile-nav-visible");
+        } else if (!mobilePastThreshold) {
+          document.body.classList.remove("mobile-nav-visible");
+        } else if (scrolledUp) {
+          document.body.classList.add("mobile-nav-visible");
+        } else if (scrolledDown) {
+          document.body.classList.remove("mobile-nav-visible");
         }
 
         lastScrollY = currentScrollY;
